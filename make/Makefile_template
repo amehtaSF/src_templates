@@ -1,0 +1,34 @@
+
+all: results/analysis.html
+	
+
+FORCE:
+
+clean:
+	find results -name "*.html" -type f -delete
+
+
+# -- Analyze data -- #
+
+analysis: results/analysis.html
+
+results/%.html: src/analysis/%.Rmd
+	Rscript -e 'rmarkdown::render("$<", output_dir="results")'
+
+# -- Preprocess data -- #
+
+preproc: data/proc/%.csv
+
+data/proc/%.csv: src/preproc/initial_preproc.Rmd
+	Rscript -e 'rmarkdown::render("$<")'
+
+# -- Gather data -- #
+
+gather: FORCE
+	bash src/gather/gather.sh;
+	
+doc/codebook.xlsx: src/gather/gather.sh
+	bash src/gather/gather.sh;
+
+data/raw/%.csv: src/gather/gather.sh
+	bash src/gather/gather.sh;

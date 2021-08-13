@@ -1,0 +1,84 @@
+---
+title: "Preprocessing script"
+author: "Ashish"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    theme: paper
+---
+
+# Initialization
+```{r, message=FALSE}
+# devtools::install_github("amehtaSF/rsurveyutils")
+library(rsurveyutils)
+library(here)
+library(tidyverse)
+library(tidylog)
+theme_set(theme_bw())
+```
+
+
+# Preprocessing
+## Functions
+```{r}
+
+```
+
+## Read data
+```{r}
+codebook_filepath <- ""
+codebook_vars <- readxl::read_excel(here(codebook_filepath), sheet="variables")
+codebook_values <- readxl::read_excel(here(codebook_filepath), sheet="values")
+
+filepath <- ""
+df_file <- read_csv(here(filepath))
+df_raw <- df_file %>% 
+  # -- remove qualtrics erroneous header -- #
+  # slice(-1) %>% 
+  # -- add raw data file name -- #
+  mutate(rawDataFile = filepath) %>% 
+  # -- drop columns with all NA -- #
+  select(-where(~all(is.na(.)))) %>% 
+  # -- rename columns -- #
+  codebook_renamer(names_from=codebook_vars$old_col_name,
+                   names_to=codebook_vars$new_col_name)
+```
+
+## Process data
+```{r}
+df_recoded <- df_raw %>% 
+	# -- recode variables -- #
+	codebook_recoder(var_regex=codebook_values$var_regex,
+	                 values_from=codebook_values$old_value,
+	                 values_to=codebook_values$new_value)
+df_proc <- df_recoded %>% 
+  # -- remove columns with all NA -- #
+  select_if(~!all(is.na(.)))
+```
+
+
+```{r, echo=FALSE}
+# ------ End Preprocessing ------ #
+# ----- Run all chunks above -----#
+```
+
+# Export
+```{r}
+filepath_output <- paste0("data/proc/", Sys.Date(), "/_proc.csv")
+df_proc %>% 
+  write_csv(here(filepath_output))
+```
+
+
+
+
+# Session Info
+```{r}
+sessionInfo()
+```
+
